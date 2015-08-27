@@ -22,6 +22,7 @@ package io.atomicbits.scraml.dsl.client.rxhttpclient
 import be.wegenenverkeer.rxhttp.{HttpClientError, HttpServerError}
 import be.wegenenverkeer.rxhttp.scala.ImplicitConversions._
 import io.atomicbits.scraml.dsl._
+import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -42,6 +43,8 @@ case class RxHttpClient(protocol: String,
                         requestTimeout: Int,
                         maxConnections: Int,
                         defaultHeaders: Map[String, String]) extends Client {
+
+  private val logger = LoggerFactory.getLogger(classOf[RxHttpClient])
 
   val cleanPrefix = prefix.map { pref =>
     val strippedPref = pref.stripPrefix("/").stripSuffix("/")
@@ -73,7 +76,7 @@ case class RxHttpClient(protocol: String,
     requestBuilder.queryParameters.foreach { element =>
       val (key, value) = element
       value match {
-        case SingleHttpParam(parameter)    => clientWithResourcePathAndMethod.addQueryParam(key, parameter)
+        case SingleHttpParam(parameter) => clientWithResourcePathAndMethod.addQueryParam(key, parameter)
         case RepeatedHttpParam(parameters) =>
           parameters.foreach(parameter => clientWithResourcePathAndMethod.addQueryParam(key, parameter))
       }
@@ -88,7 +91,7 @@ case class RxHttpClient(protocol: String,
     requestBuilder.formParameters.foreach { element =>
       val (key, value) = element
       value match {
-        case SingleHttpParam(parameter)    => clientWithResourcePathAndMethod.addFormParam(key, parameter)
+        case SingleHttpParam(parameter) => clientWithResourcePathAndMethod.addFormParam(key, parameter)
         case RepeatedHttpParam(parameters) =>
           parameters.foreach(parameter => clientWithResourcePathAndMethod.addFormParam(key, parameter))
       }
@@ -105,7 +108,7 @@ case class RxHttpClient(protocol: String,
             part.contentId.orNull,
             part.transferEncoding.orNull
           )
-      case part: FilePart      =>
+      case part: FilePart =>
         clientWithResourcePathAndMethod
           .addFileBodyPart(
             part.name,
@@ -116,7 +119,7 @@ case class RxHttpClient(protocol: String,
             part.contentId.orNull,
             part.transferEncoding.orNull
           )
-      case part: StringPart    =>
+      case part: StringPart =>
         clientWithResourcePathAndMethod
           .addStringBodyPart(
             part.name,
@@ -130,7 +133,7 @@ case class RxHttpClient(protocol: String,
 
     val clientRequest = clientWithResourcePathAndMethod.build()
 
-    println(s"client request: $clientRequest")
+    logger.debug(s"client request: $clientRequest")
 
     client.execute[Response[String]](
       clientRequest,
@@ -189,9 +192,9 @@ case class RxHttpClient(protocol: String,
       }
     } flatMap {
       case response@Response(_, _, _, Some(JsSuccess(t, path)), _) => Future.successful(response.copy(body = Some(t)))
-      case response@Response(_, _, _, Some(JsError(Nil)), _)       => Future.successful(response.copy(body = None))
-      case response@Response(_, _, _, None, _)                     => Future.successful(response.copy(body = None))
-      case Response(_, _, _, Some(JsError(e)), _)                  =>
+      case response@Response(_, _, _, Some(JsError(Nil)), _) => Future.successful(response.copy(body = None))
+      case response@Response(_, _, _, None, _) => Future.successful(response.copy(body = None))
+      case Response(_, _, _, Some(JsError(e)), _) =>
         val validationMessages: Seq[String] = {
           e flatMap {
             errorsByPath =>

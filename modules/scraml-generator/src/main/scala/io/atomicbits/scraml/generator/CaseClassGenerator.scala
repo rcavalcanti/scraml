@@ -20,6 +20,7 @@
 package io.atomicbits.scraml.generator
 
 import io.atomicbits.scraml.generator.lookup.{ObjectElExt, SchemaLookup}
+import org.slf4j.LoggerFactory
 
 
 /**
@@ -33,6 +34,9 @@ import io.atomicbits.scraml.generator.lookup.{ObjectElExt, SchemaLookup}
  *
  */
 object CaseClassGenerator {
+
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def generateCaseClasses(schemaLookup: SchemaLookup): List[String] = {
 
@@ -52,7 +56,7 @@ object CaseClassGenerator {
                                            objectEl: ObjectElExt,
                                            schemaLookup: SchemaLookup): List[String] = {
 
-    println(s"Generating case class for: $canonicalName")
+    logger.info(s"Generating case class for: $canonicalName")
 
     val caseClassFields = objectEl.properties.toList.map(TypeGenerator.schemaAsField(_, objectEl.requiredFields, schemaLookup))
 
